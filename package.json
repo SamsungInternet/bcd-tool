@@ -1,0 +1,16 @@
+{
+  "name": "samsung-browser-compat-data",
+  "version": "1.0.0",
+  "description": "Tool to update mdn browser compat data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ada Rose Cannon",
+  "license": "MIT",
+  "dependencies": {
+    "glob": "^7.1.4",
+    "mz": "^2.7.0",
+    "simple-git": "^1.126.0"
+  }
+}
