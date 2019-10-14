@@ -29,6 +29,17 @@ function getSamsungVersion(chromeVersion) {
 	return version;
 }
 
+// Recurse through object finding __compat and running fn on it.
+function compatWalker(inObject, parentName, fn) {
+	for (const [name, o] of Object.entries(inObject)) {
+		if (name === '__compat') {
+			fn(parentName, o);
+		} else {
+			compatWalker(o, name, fn);
+		}
+	}
+}
+
 (async function main() {
 
 	// Clone if it is not already downloaded
@@ -47,11 +58,23 @@ function getSamsungVersion(chromeVersion) {
 		const file = JSON.parse(
 			await fs.readFile(filepath,'utf8')
 		);
-		
 
-		for (const api of Object.keys(file.api)) {
-			// Update file in place
-			console.log(Object.keys(api));
+		for (const [apiName, api] of Object.entries(file.api)) {
+			compatWalker(api, apiName, function (parentName, {support}) {
+				if (
+					!support.samsunginternet_android ||
+					support.samsunginternet_android.version_added === false
+				) {
+					if (
+						support.chrome_android.version_added && 
+						getSamsungVersion(support.chrome_android.version_added)
+					) {
+						console.log(`${parentName} of ${apiName} added in Chrome, ${support.chrome_android.version_added} which is Samsung ${getSamsungVersion(support.chrome_android.version_added)}`);
+					} else {
+						console.log(`${parentName} is undefined but chrome_android is empty`);
+					}
+				}
+			});
 		}
 
 		// Write it back out, 2 spaces seperation with newline at end.
