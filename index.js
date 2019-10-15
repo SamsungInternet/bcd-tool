@@ -19,6 +19,9 @@ const mappings = [
 ];
 
 function getSamsungVersion(chromeVersion) {
+	if (chromeVersion === false) return false;
+	if (chromeVersion === true) return true;
+
 	if (chromeVersion < mappings[0][1]) return true;
 
 	let version = false;
@@ -28,7 +31,7 @@ function getSamsungVersion(chromeVersion) {
 			break;
 		}
 	}
-	return version;
+	return String(version);
 }
 
 // Recurse through object finding __compat and running fn on it.
@@ -40,6 +43,39 @@ function compatWalker(inObject, parentName, fn) {
 			if (typeof o === 'object') compatWalker (o, name, fn);
 		}
 	}
+}
+
+function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
+					
+	const data = samsungData || {};
+
+	// For eacho of the properties defined in the chrome data
+	for (const prop of Object.keys(chromeData)) {
+
+		// Ignore flags we don't promote them
+		if (prop === 'flags') continue;
+
+		// if that property is not defined in the existing Samsung data
+		// or if the data is falsy or true, it maybe updated to an actual version
+		if (!data[prop] || data[prop] === true) {
+
+			console.log(`${propName} ${prop} in Chrome, ${chromeData.version_added} which is Samsung ${getSamsungVersion(chromeData.version_added)}`);
+
+			// Convert version numbers to the equivalent Samsung version
+			let value = chromeData[prop];
+			if (
+				prop === 'version_added' ||
+				prop === 'version_removed'
+			) {
+				value = getSamsungVersion(value);
+			}
+
+			// Update the samsung version with that value
+			data[prop] = value;
+		}
+	}
+
+	return data;
 }
 
 (async function main() {
@@ -54,7 +90,8 @@ function compatWalker(inObject, parentName, fn) {
 		.clone(remote, gitPath, {});
 	}
 
-	const files = await glob(path.join(gitPath, '**/*.json'));
+	const args = process.argv.slice(2);
+	const files = args.length ? args.map(s => path.resolve(s)) : await glob(path.join(gitPath, '**/*.json'));
 	for (const filepath of files) {
 		console.log(filepath);
 		let file;
@@ -71,36 +108,25 @@ function compatWalker(inObject, parentName, fn) {
 			// Ignore browsers doesn't contain compat info
 			if (type === "browsers") continue; 
 			compatWalker(api, type, function (parentName, {support}) {
+				console.log(`Found ${parentName}`)
 				if (!support) {
 					console.log('WARNING! Compat does not have support');
 					return;
 				}
-				if (!support.chrome_android) {
-					console.log('Chrome Android Info is not defined');
-				} else if (
-					(
-						!support.samsunginternet_android ||
-						support.samsunginternet_android.version_added === false
-					) ||
-					(
-						support.chrome_android.version_removed &&
-						!support.samsunginternet_android.version_removed
+
+				const chromeData = support.chrome_android;
+				if (!chromeData) {
+					console.log('Chrome Android Info is not defined cannot infer data');
+				} else if (Array.isArray(chromeData)) {
+					// Handle the case where it is an Array, this will always overwrite
+					console.log(`${parentName} added in Chrome, data is Array so overwriting`);
+					support.samsunginternet_android = chromeData.map(data => getSamsungDataFromChromeData(parentName, data));
+				} else {
+					support.samsunginternet_android = getSamsungDataFromChromeData(
+						parentName, 
+						chromeData,
+						support.samsunginternet_android
 					)
-				) {
-					if (
-						support.chrome_android.version_added && 
-						getSamsungVersion(support.chrome_android.version_added)
-					) {
-						console.log(`${parentName} added in Chrome, ${support.chrome_android.version_added} which is Samsung ${getSamsungVersion(support.chrome_android.version_added)}`);
-						support.samsunginternet_android = {
-							version_added: getSamsungVersion(support.chrome_android.version_added),
-							version_removed:
-								support.chrome_android.version_removed &&
-								getSamsungVersion(support.chrome_android.version_removed)
-						}
-					} else {
-						console.log(`${parentName} is undefined but chrome_android is empty`);
-					}
 				}
 			});
 		}
