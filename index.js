@@ -35,7 +35,7 @@ function compatWalker(inObject, parentName, fn) {
 		if (name === '__compat') {
 			fn(parentName, o);
 		} else {
-			if (typeof o === 'object') process.nextTick(compatWalker, o, name, fn);
+			if (typeof o === 'object') compatWalker (o, name, fn);
 		}
 	}
 }
@@ -94,7 +94,8 @@ function compatWalker(inObject, parentName, fn) {
 			});
 		}
 
+		// console.log(`Writing out ${filepath}`)
 		// Write it back out, 2 spaces seperation with newline at end.
-		fs.writeFile(filepath, JSON.stringify(file, null, 2) + '\n');
+		await fs.writeFile(filepath, JSON.stringify(file, null, 2) + '\n');
 	}
 }());
