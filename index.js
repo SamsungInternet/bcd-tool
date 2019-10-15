@@ -6,7 +6,7 @@ const simpleGit = require('simple-git/promise');
 const gitPath = path.join(__dirname, 'browser-compat-data/');
 const util = require('util');
 const glob = util.promisify(require('glob'));
-const remote = 'https://github.com/mdn/browser-compat-data.git';
+const remote = 'https://github.com/SamsungInternet/browser-compat-data';
 
 const mappings = [
 	[6, 56],
