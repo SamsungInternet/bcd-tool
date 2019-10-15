@@ -9,6 +9,8 @@ const glob = util.promisify(require('glob'));
 const remote = 'https://github.com/SamsungInternet/browser-compat-data';
 
 const mappings = [
+	[4, 44],
+	[5, 51],
 	[6, 56],
 	[7, 59],
 	[8, 63],
