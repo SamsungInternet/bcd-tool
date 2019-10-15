@@ -73,19 +73,28 @@ function compatWalker(inObject, parentName, fn) {
 					console.log('WARNING! Compat does not have support');
 					return;
 				}
-				if (
-					!support.samsunginternet_android ||
-					support.samsunginternet_android.version_added === false
+				if (!support.chrome_android) {
+					console.log('Chrome Android Info is not defined');
+				} else if (
+					(
+						!support.samsunginternet_android ||
+						support.samsunginternet_android.version_added === false
+					) ||
+					(
+						support.chrome_android.version_removed &&
+						!support.samsunginternet_android.version_removed
+					)
 				) {
-					if (!support.chrome_android) {
-						console.log('Chrome Android Info is not defined');
-					} else if (
+					if (
 						support.chrome_android.version_added && 
 						getSamsungVersion(support.chrome_android.version_added)
 					) {
 						console.log(`${parentName} added in Chrome, ${support.chrome_android.version_added} which is Samsung ${getSamsungVersion(support.chrome_android.version_added)}`);
 						support.samsunginternet_android = {
-							version_added: getSamsungVersion(support.chrome_android.version_added)
+							version_added: getSamsungVersion(support.chrome_android.version_added),
+							version_removed:
+								support.chrome_android.version_removed &&
+								getSamsungVersion(support.chrome_android.version_removed)
 						}
 					} else {
 						console.log(`${parentName} is undefined but chrome_android is empty`);
