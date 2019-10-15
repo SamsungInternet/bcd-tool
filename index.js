@@ -19,6 +19,7 @@ const mappings = [
 ];
 
 function getSamsungVersion(chromeVersion) {
+	if (chromeVersion === null) return null;
 	if (chromeVersion === false) return false;
 	if (chromeVersion === true) return true;
 
