@@ -35,7 +35,7 @@ function compatWalker(inObject, parentName, fn) {
 		if (name === '__compat') {
 			fn(parentName, o);
 		} else {
-			compatWalker(o, name, fn);
+			if (typeof o === 'object') process.nextTick(compatWalker, o, name, fn);
 		}
 	}
 }
@@ -55,21 +55,38 @@ function compatWalker(inObject, parentName, fn) {
 	const files = await glob(path.join(gitPath, '**/*.json'));
 	for (const filepath of files) {
 		console.log(filepath);
-		const file = JSON.parse(
-			await fs.readFile(filepath,'utf8')
-		);
+		let file;
+		try {
+			file = JSON.parse(
+				await fs.readFile(filepath, 'utf8')
+			);
+		} catch (e) {
+			console.log('WARNING! Invalid JSON.');
+			continue;
+		}
+		for (const [type, api] of Object.entries(file)) {
 
-		for (const [apiName, api] of Object.entries(file.api)) {
-			compatWalker(api, apiName, function (parentName, {support}) {
+			// Ignore browsers doesn't contain compat info
+			if (type === "browsers") continue; 
+			compatWalker(api, type, function (parentName, {support}) {
+				if (!support) {
+					console.log('WARNING! Compat does not have support');
+					return;
+				}
 				if (
 					!support.samsunginternet_android ||
 					support.samsunginternet_android.version_added === false
 				) {
-					if (
+					if (!support.chrome_android) {
+						console.log('Chrome Android Info is not defined');
+					} else if (
 						support.chrome_android.version_added && 
 						getSamsungVersion(support.chrome_android.version_added)
 					) {
-						console.log(`${parentName} of ${apiName} added in Chrome, ${support.chrome_android.version_added} which is Samsung ${getSamsungVersion(support.chrome_android.version_added)}`);
+						console.log(`${parentName} added in Chrome, ${support.chrome_android.version_added} which is Samsung ${getSamsungVersion(support.chrome_android.version_added)}`);
+						support.samsunginternet_android = {
+							version_added: getSamsungVersion(support.chrome_android.version_added)
+						}
 					} else {
 						console.log(`${parentName} is undefined but chrome_android is empty`);
 					}
@@ -79,8 +96,5 @@ function compatWalker(inObject, parentName, fn) {
 
 		// Write it back out, 2 spaces seperation with newline at end.
 		fs.writeFile(filepath, JSON.stringify(file, null, 2) + '\n');
-		break;
 	}
-
-	// Get a list of all the JSON files
 }());
