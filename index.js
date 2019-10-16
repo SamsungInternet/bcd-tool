@@ -112,7 +112,11 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 
 			// Ignore browsers doesn't contain compat info
 			if (type === "browsers") continue; 
-			compatWalker(api, type, function (parentName, {support}) {
+
+			// Find __compat objects
+			compatWalker(api, type, function (parentName, compat) {			
+				const support = compat.support;
+
 				console.log(`Found ${parentName}`)
 				if (!support) {
 					console.log('WARNING! Compat does not have support');
@@ -133,6 +137,15 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 						support.samsunginternet_android
 					)
 				}
+
+				// Sort support into alphabetical order
+				const newSupport = {};
+				Object.keys(support)
+				.sort()
+				.forEach(key => {
+					newSupport[key] = support[key]
+				});
+				compat.support = newSupport;
 			});
 		}
 
