@@ -139,13 +139,12 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 				}
 
 				// Sort support into alphabetical order
-				const newSupport = {};
+				compat.support = {};
 				Object.keys(support)
 				.sort()
 				.forEach(key => {
-					newSupport[key] = support[key]
+					compat.support[key] = support[key]
 				});
-				compat.support = newSupport;
 			});
 		}
 
