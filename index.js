@@ -98,6 +98,7 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 	const args = process.argv.slice(2);
 	const files = args.length ? args.map(s => path.resolve(s)) : await glob(path.join(gitPath, '**/*.json'));
 	for (const filepath of files) {
+		let dirty = false;
 		console.log(filepath);
 		let file;
 		try {
@@ -123,14 +124,35 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 					return;
 				}
 
-				const chromeData = support.chrome_android;
+				const chromeData = (function () {
+					if (Array.isArray(support.chrome_android)) {
+						const tempArray = support.chrome_android
+						.filter(i => !i.flags)
+						.filter(i => !(i.version_removed && getSamsungVersion(i.version_added) === getSamsungVersion(i.version_removed)));
+						if (tempArray.length === 1) return tempArray[0];
+						return tempArray;
+					}
+					return support.chrome_android;
+				}());
+				
 				if (!chromeData) {
 					console.log('Chrome Android Info is not defined cannot infer data');
 				} else if (Array.isArray(chromeData)) {
-					// Handle the case where it is an Array, this will always overwrite
-					console.log(`${parentName} added in Chrome, data is Array so overwriting`);
-					support.samsunginternet_android = chromeData.map(data => getSamsungDataFromChromeData(parentName, data));
+					// Handle the case where it is an Array, this will overwrite if the number of entries is different
+					console.log(`${parentName} added in Chrome, data is Array so may be overwriting`);
+					if (
+						support.samsunginternet_android &&
+						Array.isArray(support.samsunginternet_android) &&
+						support.samsunginternet_android.length === chromeData.length
+					) {
+						support.samsunginternet_android = chromeData.map((data, i) => getSamsungDataFromChromeData(parentName, data, support.samsunginternet_android[i]));
+						dirty = true;
+					} else {
+						dirty = true;
+						support.samsunginternet_android = chromeData.map(data => getSamsungDataFromChromeData(parentName, data));
+					}
 				} else {
+					dirty = true;
 					support.samsunginternet_android = getSamsungDataFromChromeData(
 						parentName, 
 						chromeData,
@@ -150,6 +172,6 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 
 		// console.log(`Writing out ${filepath}`)
 		// Write it back out, 2 spaces seperation with newline at end.
-		await fs.writeFile(filepath, JSON.stringify(file, null, 2) + '\n');
+		if (dirty) await fs.writeFile(filepath, JSON.stringify(file, null, 2) + '\n');
 	}
 }());
