@@ -138,7 +138,7 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 				if (!chromeData) {
 					console.log('Chrome Android Info is not defined cannot infer data');
 				} else if (Array.isArray(chromeData)) {
-					// Handle the case where it is an Array, this will overwrite if the number of entries is different
+					// Handle the case where it is an Array, t`his will overwrite if the number of entries is different
 					console.log(`${parentName} added in Chrome, data is Array so may be overwriting`);
 					if (
 						support.samsunginternet_android &&
