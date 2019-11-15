@@ -99,7 +99,7 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 	}
 
 	const args = process.argv.slice(2);
-	const files = args.length ? args.map(s => path.resolve(s)) : await glob(path.join(gitPath, '**/*.json'));
+	const files = args.length ? await glob(path.resolve(args[0])) : await glob(path.join(gitPath, '**/*.json'));
 	for (const filepath of files) {
 		let dirty = false;
 		console.log(filepath);
