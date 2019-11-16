@@ -7,11 +7,26 @@ const gitPath = path.join(__dirname, 'browser-compat-data/');
 const util = require('util');
 const glob = util.promisify(require('glob'));
 const remote = 'https://github.com/SamsungInternet/browser-compat-data';
+const Replacer = require('pattern-replace');
+const samsungReplacer = new Replacer({
+	patterns: [{
+		match: /chrome (\d\d)/ig,
+		replacement: function (needle) {
+            const chromeVersion = Number(needle.slice(-2));
+			return 'Samsung Internet ' + getSamsungVersion(chromeVersion);
+		}
+	},
+	{
+		match: /chrome/ig,
+		replacement: 'Samsung Internet'
+	}]
+})
 
 const mappings = [
 	["1.0", 18],
-	["2.0", 28],
-	["3.0", 34],
+	["1.5", 28],
+	["2.0", 34],
+	["3.0", 38],
 	["4.0", 44],
 	["5.0", 51],
 	["6.0", 56],
@@ -49,9 +64,9 @@ function compatWalker(inObject, parentName, fn) {
 	}
 }
 
-function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
+function getSamsungDataFromChromeData(propName, chromeData, samsungDataIn) {
 					
-	const data = samsungData || {};
+	const samsungData = samsungDataIn || {};
 
 	// For eacho of the properties defined in the chrome data
 	for (const prop of Object.keys(chromeData).sort()) {
@@ -61,16 +76,21 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 
 		// Ignore notes they contain browser specific 
 		// details we cannout garuntee.
-		if (prop === 'notes') continue;
+		if (prop === 'notes' && typeof chromeData[prop] === 'string' && chromeData[prop].match(/windows|linux|macos/ig)) continue;
 
 		// if that property is not defined in the existing Samsung data
 		// or if the data is falsy or true, it maybe updated to an actual version
-		if (!data[prop] || data[prop] === true) {
+		if (!samsungData[prop] || samsungData[prop] === true || chromeData[prop] <= 4) {
 
 			console.log(`${propName} ${prop} in Chrome, ${chromeData.version_added} which is Samsung ${getSamsungVersion(chromeData.version_added)}`);
 
 			// Convert version numbers to the equivalent Samsung version
 			let value = chromeData[prop];
+
+			if (prop === 'notes' && typeof chromeData[prop] === 'string') {
+				console.log(typeof chromeData[prop])
+				value = samsungReplacer.replace(chromeData[prop]);
+			}
 			if (
 				prop === 'version_added' ||
 				prop === 'version_removed'
@@ -79,11 +99,23 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungData) {
 			}
 
 			// Update the samsung version with that value
-			data[prop] = value;
+			samsungData[prop] = value;
 		}
 	}
 
-	return data;
+	// If a feature is added and removed in the same version then it was never added
+	if (samsungData.version_added && samsungData.version_added === samsungData.version_removed) {
+		delete samsungData.version_removed;
+		samsungData.version_added = false;
+	}
+
+	// if (data.version_added == false) {
+	// 	return {
+	// 		version_added: false
+	// 	}
+	// }
+
+	return samsungData;
 }
 
 (async function main() {
