@@ -10,15 +10,11 @@ const remote = 'https://github.com/SamsungInternet/browser-compat-data';
 const Replacer = require('pattern-replace');
 const samsungReplacer = new Replacer({
 	patterns: [{
-		match: /chrome (\d\d)/ig,
+		match: /(chrome|version) (\d\d)/ig,
 		replacement: function (needle) {
             const chromeVersion = Number(needle.slice(-2));
 			return 'Samsung Internet ' + getSamsungVersion(chromeVersion);
 		}
-	},
-	{
-		match: /chrome/ig,
-		replacement: 'Samsung Internet'
 	}]
 })
 
@@ -80,7 +76,7 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungDataIn) {
 
 		// if that property is not defined in the existing Samsung data
 		// or if the data is falsy or true, it maybe updated to an actual version
-		if (!samsungData[prop] || samsungData[prop] === true || chromeData[prop] <= 4) {
+		if (!samsungData[prop] || samsungData[prop] === true || (prop.match(/^version/i) && chromeData[prop] <= 4)) {
 
 			console.log(`${propName} ${prop} in Chrome, ${chromeData.version_added} which is Samsung ${getSamsungVersion(chromeData.version_added)}`);
 
@@ -88,9 +84,16 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungDataIn) {
 			let value = chromeData[prop];
 
 			if (prop === 'notes' && typeof chromeData[prop] === 'string') {
-				console.log(typeof chromeData[prop])
-				value = samsungReplacer.replace(chromeData[prop]);
+				value = samsungReplacer.replace(value) || value;
+				value = value.replace(/chrome/ig, "Samsung Internet");
+			} else if (prop === 'notes' && Array.isArray(value)) {
+				value = value.map(value => {
+					value = samsungReplacer.replace(value) || value;
+					value = value.replace(/chrome/ig, "Samsung Internet");
+					return value;
+				});
 			}
+
 			if (
 				prop === 'version_added' ||
 				prop === 'version_removed'
