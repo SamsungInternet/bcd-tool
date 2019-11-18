@@ -64,11 +64,16 @@ function getSamsungDataFromChromeData(propName, chromeData, samsungDataIn) {
 					
 	const samsungData = samsungDataIn || {};
 
+
+	// We don't use flags. 
+	if (chromeData['flags']) {
+		return {
+			version_added: false
+		}
+	}
+
 	// For eacho of the properties defined in the chrome data
 	for (const prop of Object.keys(chromeData).sort()) {
-
-		// Ignore flags we don't promote them
-		if (prop === 'flags') continue;
 
 		// Ignore notes they contain browser specific 
 		// details we cannout garuntee.
