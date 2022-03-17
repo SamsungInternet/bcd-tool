@@ -11,6 +11,6 @@
   "dependencies": {
     "glob": "^7.1.4",
     "mz": "^2.7.0",
-    "simple-git": "^1.126.0"
+    "simple-git": "^3.3.0"
   }
 }
